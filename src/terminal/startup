@@ -1,0 +1,122 @@
+channel_number = 42
+timetable_lookup_channel = 43
+activate_sleep_time = 2
+bundled_side = "bottom"
+nearly_equal_constant = 0.1
+terminal_id = "kingsx"
+trains_file = "trains"
+
+function deepcopy(orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        copy = {}
+        for orig_key, orig_value in next, orig, nil do
+            copy[deepcopy(orig_key)] = deepcopy(orig_value)
+        end
+        setmetatable(copy, deepcopy(getmetatable(orig)))
+    else -- number, string, boolean, etc
+        copy = orig
+    end
+    return copy
+end
+
+function activate(object)
+    print(output_wires[object])
+    rs.setBundledOutput(bundled_side, output_wires[object])
+    sleep(activate_sleep_time)
+    rs.setBundledOutput(bundled_side, 0)
+end
+
+function nearly_equal(object1, object2)
+    if object1 < object2 then
+        if object1 + nearly_equal_constant > object2 then
+            return true
+        else
+            return false
+        end
+    else
+        return nearly_equal(object2, object1)
+    end
+end
+
+output_wires = {
+    platform_1 = colors.white,
+    platform_2 = colors.orange
+}
+
+local timetables = {}
+
+if fs.exists(trains_file) then
+    file = fs.open(trains_file, "r")
+    timetables = textutils.unserialize(file.readAll())
+    file.close()
+end
+
+local trains = {}
+
+for i, timetable in pairs(timetables) do
+    table.insert(trains, {
+        timetable = deepcopy(timetable)
+    })
+end
+
+modem = peripheral.find("modem")
+modem.open(channel_number)
+
+function check_departures()
+    for i, train in pairs(trains) do
+        print("checking trains")
+        print("Departure time: " .. train.timetable.depart_at)
+        print("Current time: " .. os.time())
+        if nearly_equal(train.timetable.depart_at, os.time()) then
+            print("train is ready to depart")
+            
+            message = {
+                to = train.timetable.routing[1].location,
+                path = train.timetable.routing[1].path,
+                timetable = train.timetable
+            } -- drafts the message sent to the next routing point
+            table.remove(message.timetable.routing, 1) -- removes the first routing point, since it already has been described
+            print(message.to .. " : " .. message.path)
+            modem.transmit(channel_number, channel_number, message) -- sends the message to all control points, they decide themselves if they want to comply
+            
+            activate(train.timetable.platform) -- activate the departure platform
+            table.remove(trains, i)
+            file = fs.open(trains_file, "w")
+            file.write(textutils.serialize(trains))
+            file.close()
+            break -- to reset the loop since a key has been removed
+        end
+    end
+    sleep(1)
+end
+
+function get_arriving()
+    event, modem_side, sender_channel, reply_channel, arriving_train, distance = os.pullEvent()
+    if event == "modem_message" then
+        if arriving_train.to == terminal_id then
+            print("A train has arrived.")
+            print("Setting new timetable.")
+            print(arriving_train.timetable.new_table)
+            modem.open(43)
+            modem.transmit(timetable_lookup_channel, timetable_lookup_channel, tostring(arriving_train.timetable.new_table))
+            event, modem_side, sender_channel, reply_channel, new_timetable_text, distance = os.pullEvent("modem_message")
+            modem.close(43)
+            print(new_timetable_text)
+            new_timetable = textutils.unserialize(new_timetable_text)
+            new_train = {
+                timetable = new_timetable
+            }
+            print(textutils.serialize(new_train))
+            table.insert(trains, new_train)
+            file = fs.open(trains_file, "w")
+            file.write(textutils.serialize(trains))
+            file.close()
+        end
+    end
+end
+
+while true do
+    parallel.waitForAll(check_departures, get_arriving)
+end

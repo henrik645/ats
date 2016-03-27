@@ -1,0 +1,131 @@
+ -- The part responsible for intermediate station stops
+ -- This station must be present in stopping trains' timetables,
+ -- if the destination shall be visible in the track-side display
+ 
+ -- Note: If detector rail is activated while no routing information
+ -- was found, the train will be presumed not stopping at the station
+ -- and will be let through.
+ 
+ -- Note: This program can handle single/double track, but with multiple
+ -- tracks please use a separate computer for each one.
+ 
+internal_station_name = "clapham" -- for timetable reference
+visible_station_name = "Clapham Junction" -- for display on platform displays
+bundled_side = "front" -- where on the computer the bundled cable is located
+stop_wait_time = 10 -- how many seconds the train will be held at the station
+departure_time = 5 -- how many seconds the locking rail will be activated for
+modem_channel = 42 -- channel for communication with other routing points
+
+input_wires = {
+    [colors.white] = "in_detector_rail",
+    [colors.magenta] = "out_detector_rail"
+}
+
+output_wires = {
+    locking_rail = colors.orange -- NOTE: locking_rail activated when train will be HELD, not the default way of the other way around
+}
+
+-- display_bg = colors.blue -- display background color
+-- display_txt = colors.yellow -- display normal text color
+-- diplay_bold_txt = colors.black -- display text color for bold text
+
+display_colors = {
+    bg = colors.blue,
+    bold = colors.black,
+    text = colors.yellow
+}
+
+function update_display(screen, train, display_colors)
+    screen.setBackgroundColor(display_colors.bg)
+    screen.clear()
+    screen.setCursorPos(1, 1)
+    
+    screen.setTextColor(display_colors.bold)
+    screen.write(visible_station_name)
+    
+    screen.setTextColor(display_colors.text)
+    screen.setCursorPos(1, 2)
+    if not (train.timetable.destination == nil) then
+        --screen.write("Destination:")
+        screen.setCursorPos(1, 3)
+        screen.write(train.timetable.destination)
+        if not (train.timetable.extra_info == nil) then
+            screen.setCursorPos(1, 4)
+            screen.write(train.timetable.extra_info)
+        end
+    else
+        screen.write("See timetable")
+        screen.setCursorPos(1, 3)
+        screen.write("for details.")
+    end
+end
+
+modem = peripheral.find("modem")
+screen = peripheral.find("monitor")
+
+modem.open(modem_channel)
+
+train_queue = {} -- holds the queue of train timetables and routing
+
+if fs.exists("train_queue") then
+    file = fs.open("train_queue", "r")
+    train_queue = textutils.unserialize(file.readAll())
+    file.close()
+end
+
+while true do
+    event, modem_side, sender_channel, reply_channel, message, distance = os.pullEvent()
+    if event == "modem_message" then
+        if message.to == internal_station_name then
+            print("A train is approaching.")
+            table.insert(train_queue, message)
+            print(message.timetable.destination)
+            file = fs.open("train_queue", "w")
+            file.write(textutils.serialize(train_queue))
+            file.close()
+        end
+    elseif event == "redstone" then
+        bundled_input = rs.getBundledInput(bundled_side)
+        for color, event_name in pairs(input_wires) do
+            if colors.test(bundled_input, color) then
+                input_event = event_name
+                break
+            end
+        end
+        print(input_event)
+
+        if input_event == "in_detector_rail" and #train_queue == 0 then -- train will not be stopping at station since no routing information has been received
+            print("Train is non-stop running.")
+            --train_being_handled = nil -- makes sure no other part of this program tries to use an old train_being_handled value when non-stop running
+        elseif input_event == "in_detector_rail" and #train_queue > 0 then -- only activates locking rail if train is expected, see note above
+            print("stopping train approaching.")
+            rs.setBundledOutput(bundled_side, output_wires.locking_rail) -- locks the track
+            train_being_handled = train_queue[1] -- takes the first train in the queue of timetables
+            print(train_being_handled.timetable.destination)
+            table.remove(train_queue, 1) -- removes it, too
+            file = fs.open("train_queue", "w")
+            file.write(textutils.serialize(train_queue))
+            file.close()
+            update_display(screen, train_being_handled, display_colors) -- updates the train display
+            sleep(stop_wait_time)
+            rs.setBundledOutput(bundled_side, 0)
+            update_display(screen, nil, display_colors)
+        elseif input_event == "out_detector_rail" and not train_being_handled == nil then -- indicates the train has left the station, tries to send data to next station only when train actually stopped, see note above
+            message = { -- prepares message for next routing point
+                to = train_being_handled.timetable.routing[1].location,
+                path = train_being_handled.timetable.routing[1].path,
+                timetable = train_being_handled.timetable
+            }
+            table.remove(message.timetable.routing, 1) -- removes the first routing point, since it already has been described here
+            print("next point: " .. message.to .. " : " .. message.path)
+            modem.transmit(channel_number, channel_number, message) -- sends the message to all control points, they decide themselves if they want to comply
+            rs.setBundledOutput(bundled_side, 0)
+            print("train left station")
+            
+            file = fs.open("train_queue", "w")
+            file.write(textutils.serialize(train_queue))
+            file.close()
+        end
+    end
+    sleep(1)
+end

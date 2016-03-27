@@ -1,0 +1,22 @@
+local channel = 43
+local trains_file = "trains"
+
+modem = peripheral.find("modem")
+modem.open(channel)
+
+print("Enter timetable number.")
+print("Press enter when finished.")
+print("")
+
+timetables = {}
+while true do
+  no = io.read()
+  if no == "" then break end
+  modem.transmit(channel, channel, no)
+  event, _, _, _, message = os.pullEvent("modem_message")
+  table.insert(timetables, textutils.unserialize(message))
+end
+
+file = fs.open(trains_file, "w")
+file.write(textutils.serialize(timetables))
+file.close()

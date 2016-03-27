@@ -1,0 +1,92 @@
+channel_number = 42
+route_point_id = "exeter"
+bundled_side = "bottom"
+occupied = false -- true if there is a train at the junction
+
+input_wires = {
+    [colors.gray] = "train_approaching",
+    [colors.lightGray] = "train_left",
+    [colors.pink] = "train_combined",  -- train_combined means either train exit or train approaching (bi-directional running)
+    [colors.cyan] = "train_combined"
+}
+
+output_wires = {
+    up_to_p1_pt1 = colors.yellow,
+    up_to_p1_pt2 = colors.magenta,
+    p2_to_down_pt1 = colors.lime,
+    p2_to_down_pt2 = colors.lightBlue
+}
+
+paths = {
+    up_to_p1 = {"up_to_p1_pt1", "up_to_p1_pt2"},
+    up_to_p2 = {},
+    p1_to_down = {},
+    p2_to_down = {"p2_to_down_pt1", "p2_to_down_pt2"}
+}
+
+modem = peripheral.find("modem")
+modem.open(channel_number)
+
+train_queue = {} -- holds the queue of train timetables and routing
+
+if fs.exists("train_queue") then
+    file = fs.open("train_queue", "r")
+    train_queue = textutils.unserialize(file.readAll())
+    file.close()
+end
+
+while true do
+    event, modem_side, sender_channel, reply_channel, message, distance = os.pullEvent()
+    if event == "modem_message" then
+        if message.to == route_point_id then
+            print("Routing information has been received.")
+            table.insert(train_queue, message)
+            file = fs.open("train_queue", "w")
+            file.write(textutils.serialize(train_queue))
+            file.close()
+            print(message.to .. " : " .. message.path)
+        end
+    elseif event == "redstone" then
+        print("redstone event")
+        bundled_input = rs.getBundledInput(bundled_side)
+        print("bundled input: " .. bundled_input)
+        for color, event_name in pairs(input_wires) do
+            print(color .. " : " .. event_name)
+        end
+        for color, event_name in pairs(input_wires) do
+            if colors.test(bundled_input, color) then
+                input_event = event_name
+                break
+            end
+        end
+
+        if input_event == "train_approaching" or (input_event == "train_combined" and occupied == false) then
+            occupied = true
+            train_being_handled = train_queue[1] -- takes the first train in the queue of timetables
+            table.remove(train_queue, 1) -- removes it, too
+            file = fs.open("train_queue", "w")
+            file.write(textutils.serialize(train_queue))
+            file.close()
+            output = 0 -- final bundled output
+            print(output)
+            for i, object in pairs(paths[train_being_handled.path]) do
+                output = output + output_wires[object]
+            end
+            print(output)
+            rs.setBundledOutput(bundled_side, output)
+        elseif input_event == "train_left" or (input_event == "train_combined" and occupied == true) then -- indicates the train has left the routing point
+            occupied = false
+            message = { -- prepares message for next routing point
+                to = train_being_handled.timetable.routing[1].location,
+                path = train_being_handled.timetable.routing[1].path,
+                timetable = train_being_handled.timetable
+            }
+            table.remove(message.timetable.routing, 1) -- removes the first routing point, since it already has been described here
+            print("next point: " .. message.to .. " : " .. message.path)
+            modem.transmit(channel_number, channel_number, message) -- sends the message to all control points, they decide themselves if they want to comply
+            rs.setBundledOutput(bundled_side, 0)
+            print("train left section")
+        end
+    end
+    sleep(1)
+end

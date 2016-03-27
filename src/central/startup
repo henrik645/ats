@@ -1,0 +1,19 @@
+modem_channel = 43
+timetable_file = "timetables"
+
+modem = peripheral.find("modem")
+modem.open(modem_channel)
+
+while true do
+    event, side, channel, reply_channel, message, distance = os.pullEvent("modem_message")
+    print(message)
+
+    file = fs.open(timetable_file, "r")
+    file_contents = file.readAll()
+    timetables = textutils.unserialize(file_contents)
+    file.close()
+
+    correct_timetable = timetables[tonumber(message)]
+    print(textutils.serialize(correct_timetable))
+    modem.transmit(43, 43, textutils.serialize(correct_timetable))
+end
