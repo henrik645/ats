@@ -1,17 +1,17 @@
-local settings_file_path = "networkSettings"
+local settingsFilePath = "networkSettings"
 os.loadAPI("apis/logging.lua")
 
 function initialise() -- initialises the settings file
-    if fs.exists(settings_file_path) then
-        settings_file = fs.open(settings_file_path)
+    if fs.exists(settingsFilePath) then
+        settingsFile = fs.open(settingsFilePath)
         settings = textutils.unserialize(fs.readAll()) -- takes care of the serialized settings file
-        fs.close(settings_file)
+        fs.close(settingsFile)
     else
         logging.error("networking: could not find settings file")
     end
 end
 
-function send_message(modem, recipient, port, replyPort, data) -- sends a message on the network
+function sendMessage(modem, recipient, port, replyPort, data) -- sends a message on the network
     modem.transmit(port, replyPort, {
         recipient = recipient,
         port = port,
@@ -21,7 +21,7 @@ function send_message(modem, recipient, port, replyPort, data) -- sends a messag
     )
 end
 
-function receive_message(modem, port, timeout) -- takes care of receiving a message
+function receiveMessage(modem, port, timeout) -- takes care of receiving a message
     modem.open(port)
     local timer = os.startTimer(timeout)
     local event, _, _, _, data, _ = os.pullEvent()
@@ -29,12 +29,12 @@ function receive_message(modem, port, timeout) -- takes care of receiving a mess
     if event == "timer" then
         return
     elseif event == "modem_message" then
-        handle_message(data)
+        handleMessage(data)
     end
     os.cancelTimer(timer) -- makes sure the timer isn't running in the background
 end
 
-function handle_message(message) -- handles a message if you want to catch it yourself
+function handleMessage(message) -- handles a message if you want to catch it yourself
     if message.recipient == settings.nodeName then
         return message.data
     else
