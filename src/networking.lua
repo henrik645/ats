@@ -23,8 +23,8 @@ end
 
 function receive_message(modem, port, timeout) -- takes care of receiving a message
     modem.open(port)
-    timer = os.startTimer(timeout)
-    event, _, _, _, data, _ = os.pullEvent()
+    local timer = os.startTimer(timeout)
+    local event, _, _, _, data, _ = os.pullEvent()
     
     if event == "timer" then
         return
