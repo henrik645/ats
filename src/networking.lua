@@ -1,5 +1,5 @@
 local settings_file_path = "networkSettings"
-os.loadApi("apis/logging")
+os.loadAPI("apis/logging")
 
 function initialise() -- initialises the settings file
     if fs.exists(settings_file_path) then
