@@ -1,4 +1,4 @@
-local settingsFilePath = "networkSettings"
+local settingsFilePath = "apis/networkSettings"
 os.loadAPI("apis/logging")
 
 function initialise() -- initialises the settings file
