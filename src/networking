@@ -3,9 +3,9 @@ os.loadAPI("apis/logging")
 
 function initialise() -- initialises the settings file
     if fs.exists(settingsFilePath) then
-        settingsFile = fs.open(settingsFilePath)
         settings = textutils.unserialize(fs.readAll()) -- takes care of the serialized settings file
         fs.close(settingsFile)
+        settingsFile = fs.open(settingsFilePath, "r")
     else
         logging.errorMsg("networking: could not find settings file")
     end
