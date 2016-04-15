@@ -1,5 +1,5 @@
 local settingsFilePath = "networkSettings"
-os.loadAPI("apis/logging.lua")
+os.loadAPI("apis/logging")
 
 function initialise() -- initialises the settings file
     if fs.exists(settingsFilePath) then
