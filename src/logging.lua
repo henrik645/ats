@@ -1,12 +1,12 @@
-function info(message)
+function infoMsg(message)
     print("[INFO] " .. message)
 end
 
-function warning(message)
+function warningMsg(message)
     print("[WARNING] " .. message)
 end
 
-function error(message)
+function errorMsg(message)
     print("[ERROR] " .. message)
     error("Exiting program...")
 end

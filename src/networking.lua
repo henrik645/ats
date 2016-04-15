@@ -7,7 +7,7 @@ function initialise() -- initialises the settings file
         settings = textutils.unserialize(fs.readAll()) -- takes care of the serialized settings file
         fs.close(settingsFile)
     else
-        logging.error("networking: could not find settings file")
+        logging.errorMsg("networking: could not find settings file")
     end
 end
 
