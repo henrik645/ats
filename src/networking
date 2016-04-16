@@ -22,8 +22,8 @@ function sendMessage(modem, recipient, port, replyPort, data) -- sends a message
     )
 end
 
-function receiveMessage(modem, port, timeout) -- takes care of receiving a message
     modem.open(port)
+function receiveMessage(modem, port, timeout) -- takes care of receiving a message, returns false if no data received during timeout
     local timer = os.startTimer(timeout)
     local event, _, _, _, data, _ = os.pullEvent()
     
