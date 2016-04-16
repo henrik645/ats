@@ -1,6 +1,10 @@
  -- a library to check variables contain what's expected and react accordingly if don't
  
 function tableHasElement(tableToBeChecked, rightItem)
+    if not isTable(tableToBeChecked) then
+        return false -- returns false since a var that isn'a table can't contain the right things
+    end
+    
     for i, item in pairs(tableToBeChecked) do
         if item == rightItem then
             return true
@@ -10,6 +14,10 @@ function tableHasElement(tableToBeChecked, rightItem)
 end
 
 function tableHasElements(tableToBeChecked, rightItems)
+    if not isTable(rightItems) then
+        return false
+    end
+    
     local result = true -- if any item can't be found, this is false
     for i, item in pairs(rightItems) do
         if not tableHasElement(tableToBeChecked, item) then
@@ -20,6 +28,10 @@ function tableHasElements(tableToBeChecked, rightItems)
 end
  
 function tableHasKey(tableToBeChecked, rightKey)
+    if not isTable(tableToBeChecked) then
+        return false -- returns false since a var that isn'a table can't contain the right things
+    end
+    
     for key, value in pairs(tableToBeChecked) do
         if key == rightKey then
             return true
@@ -29,6 +41,10 @@ function tableHasKey(tableToBeChecked, rightKey)
 end
 
 function tableHasKeys(tableToBeChecked, rightKeys)
+    if not isTable(rightKeys) then
+        return false
+    end
+    
     local result = true -- if any item can't be found, this is false
     for i, key in pairs(rightKeys) do
         if not tableHasKey(tableToBeChecked, key) then
