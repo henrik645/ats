@@ -1,5 +1,4 @@
 local settingsFilePath = "apis/networkSettings"
-local waitingOnAck = {} -- recipients we expect an acknowledgement of sent message being received from
 os.loadAPI("apis/logging")
 os.loadAPI("apis/validate")
 
