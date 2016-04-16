@@ -13,6 +13,10 @@ function initialise() -- initialises the settings file
 end
 
 function sendMessage(modem, recipient, port, replyPort, data) -- sends a message on the network
+    if not validate.tableHasKeys(modem, {"transmit"}) or not validate.areNumbers({port, replyPort}) then
+        logging.errorMsg("networking: sendMessage: incorrect parameters")
+    end
+    
     modem.transmit(port, replyPort, {
         recipient = recipient,
         port = port,
@@ -23,6 +27,10 @@ function sendMessage(modem, recipient, port, replyPort, data) -- sends a message
 end
 
 function receiveMessage(modem, port, timeout) -- takes care of receiving a message, returns false if no data received during timeout
+    if not validate.tableHasKeys(modem, {"open", "close"}) or not validate.areNumbers({port, replyPort}) then
+        logging.errorMsg("networking: receiveMessage: incorrect parameters")
+    end
+    
     local timer = os.startTimer(timeout)
     modem.open(port)
     while true do
