@@ -22,17 +22,26 @@ function sendMessage(modem, recipient, port, replyPort, data) -- sends a message
     )
 end
 
-    modem.open(port)
 function receiveMessage(modem, port, timeout) -- takes care of receiving a message, returns false if no data received during timeout
     local timer = os.startTimer(timeout)
-    local event, _, _, _, data, _ = os.pullEvent()
-    
-    if event == "timer" then
-        return
-    elseif event == "modem_message" then
-        handleMessage(data)
+    modem.open(port)
+    while true do
+        local event, _, _, _, message, _ = os.pullEvent()
+        logging.infoMsg("networking: receiveMessage: event is " .. event)
+        
+        if event == "timer" then
+            return false
+        elseif event == "modem_message" then
+            data = handleMessage(message)
+            logging.infoMsg("networking: receiveMessage: data is " .. data)
+            if not data == false then
+                os.cancelTimer(timer) -- makes sure the timer isn't running in the background
+                logging.infoMsg("networking: receiveMessage: data is " .. data)
+                return data
+            end
+        end
     end
-    os.cancelTimer(timer) -- makes sure the timer isn't running in the background
+    modem.close(port)
 end
 
 function handleMessage(message) -- handles a message if you want to catch it yourself
@@ -41,6 +50,7 @@ function handleMessage(message) -- handles a message if you want to catch it you
     end
     
     if message.recipient == settings.nodeName then
+        logging.infoMsg("networking: handleMessage: Returning message data... is " .. message.data)
         return message.data
     else
         return false
