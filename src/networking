@@ -41,7 +41,7 @@ function sendMessage(modem, recipient, port, replyPort, data, timeoutPerTry, num
 end
 
 function receiveMessage(modem, port, timeout) -- takes care of receiving a message, returns false if no data received during timeout
-    if not validate.tableHasKeys(modem, {"open", "close"}) or not validate.areNumbers({port, replyPort}) then
+    if not validate.tableHasKeys(modem, {"open", "close"}) or not validate.isNumber(port) then
         logging.errorMsg("networking: receiveMessage: incorrect parameters")
     end
     
