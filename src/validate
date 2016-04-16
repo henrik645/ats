@@ -1,0 +1,39 @@
+ -- a library to check variables contain what's expected and react accordingly if don't
+ 
+function tableHasElement(tableToBeChecked, rightItem)
+    for i, item in pairs(tableToBeChecked) do
+        if item == rightItem then
+            return true
+        end
+    end
+    return false
+end
+
+function tableHasElements(tableToBeChecked, rightItems)
+    local result = true -- if any item can't be found, this is false
+    for i, item in pairs(rightItems) do
+        if not tableHasElement(tableToBeChecked, item) then
+            result = false
+        end
+    end
+    return result
+end
+ 
+function tableHasKey(tableToBeChecked, rightKey)
+    for key, value in pairs(tableToBeChecked) do
+        if key == rightKey then
+            return true
+        end
+    end
+    return false
+end
+
+function tableHasKeys(tableToBeChecked, rightKeys)
+    local result = true -- if any item can't be found, this is false
+    for i, key in pairs(rightKeys) do
+        if not tableHasKey(tableToBeChecked, key) then
+            result = false
+        end
+    end
+    return result
+end
