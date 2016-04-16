@@ -37,3 +37,21 @@ function tableHasKeys(tableToBeChecked, rightKeys)
     end
     return result
 end
+
+function isNumber(x)
+    return type(x) == "number"
+end
+
+function areNumbers(list)
+    local result = true -- if any item can't be found, this is false
+    for i, num in pairs(list) do
+        if not isNumber(num) then
+            result = false
+        end
+    end
+    return result
+end
+
+function isTable(x)
+    return type(x) == "table"
+end
