@@ -1,12 +1,41 @@
-function infoMsg(message)
-    print("[INFO] " .. message)
+local settingsFilePath = "apis/loggingSettings"
+os.loadAPI("apis/validate") -- here used for validating settings file contains what we want
+
+-- log levels:
+ -- 0 - everything visible (debug)
+ -- 1 - normal
+ -- 2 - only errors & warnings
+ -- 3 - only errors
+
+function initialise() -- initialises the settings file
+    if fs.exists(settingsFilePath) then
+        settingsFile = fs.open(settingsFilePath, "r")
+        settings = textutils.unserialize(settingsFile.readAll()) -- takes care of the serialized settings file
+        settingsFile.close()
+        
+        if not validate.tableHasKey(settings, "logLevel") then
+            error("Fatal init error: logging settings file does not contain all keys")
+        end
+    else
+        error("Fatal init error: could not find logging settings path.")
+    end
 end
 
-function warningMsg(message)
-    print("[WARNING] " .. message)
+function infoMsg(message, logLevel)
+    if logLevel == nil then logLevel = 1 end
+    if logLevel >= settings.logLevel then
+        print("[INFO] " .. message)
+    end
 end
 
-function errorMsg(message)
+function warningMsg(message, logLevel)
+    if logLevel == nil then logLevel = 1 end
+    if logLevel >= settings.logLevel then
+        print("[WARNING] " .. message)
+    end
+end
+
+function errorMsg(message) -- error messages have no log levels, all are visible
     print("[ERROR] " .. message)
     error("Exiting program...")
 end

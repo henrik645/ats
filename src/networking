@@ -27,15 +27,15 @@ function sendMessage(modem, recipient, port, replyPort, data, timeoutPerTry, num
         }
         )
         if waitForAck(modem, port, timeoutPerTry) then -- ack received
-            logging.infoMsg("networking: sendMessage: ack received")
+            logging.infoMsg("networking: sendMessage: ack received", 0)
             messageSent = true
             break
         else
-            logging.warningMsg("networking: sendMessage: ack not received, sending again")
+            logging.warningMsg("networking: sendMessage: ack not received, sending again", 0)
         end
     end
     if not messageSent then
-        logging.warningMsg("networking: sendMessage: unable to send message")
+        logging.warningMsg("networking: sendMessage: unable to send message", 2)
     end
 end
 
@@ -48,16 +48,16 @@ function receiveMessage(modem, port, timeout) -- takes care of receiving a messa
     modem.open(port)
     while true do
         local event, _, _, _, message, _ = os.pullEvent()
-        logging.infoMsg("networking: receiveMessage: event is " .. event)
+        logging.infoMsg("networking: receiveMessage: event is " .. event, 0)
         
         if event == "timer" then
             return false
         elseif event == "modem_message" then
             data = handleMessage(message)
-            logging.infoMsg("networking: receiveMessage: data is " .. data)
+            logging.infoMsg("networking: receiveMessage: data is " .. data, 0)
             if not data == false then
                 os.cancelTimer(timer) -- makes sure the timer isn't running in the background
-                logging.infoMsg("networking: receiveMessage: data is " .. data)
+                logging.infoMsg("networking: receiveMessage: data is " .. data, 0)
                 return data
             end
         end
@@ -71,7 +71,7 @@ function handleMessage(message) -- handles a message if you want to catch it you
     end
     
     if message.recipient == settings.nodeName then
-        logging.infoMsg("networking: handleMessage: Returning message data... is " .. message.data)
+        logging.infoMsg("networking: handleMessage: Returning message data... is " .. message.data, 0)
         return message.data
     else
         return false
