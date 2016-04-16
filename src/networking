@@ -1,5 +1,6 @@
 local settingsFilePath = "apis/networkSettings"
 os.loadAPI("apis/logging")
+os.loadAPI("apis/validate")
 
 function initialise() -- initialises the settings file
     if fs.exists(settingsFilePath) then
@@ -35,6 +36,10 @@ function receiveMessage(modem, port, timeout) -- takes care of receiving a messa
 end
 
 function handleMessage(message) -- handles a message if you want to catch it yourself
+    if not validate.tableHasKeys(message, {"recipient", "port", "replyPort", "data"}) or not validate.tableHasKey(settings, "nodeName") then -- tables don't contain the right things
+        logging.errorMsg("networking: handleMessage: message or settings not formatted correctly")
+    end
+    
     if message.recipient == settings.nodeName then
         return message.data
     else
