@@ -1,4 +1,5 @@
 local settingsFilePath = "apis/networkSettings"
+local waitingOnAck = {} -- recipients we expect an acknowledgement of sent message being received from
 os.loadAPI("apis/logging")
 os.loadAPI("apis/validate")
 
@@ -12,18 +13,31 @@ function initialise() -- initialises the settings file
     end
 end
 
-function sendMessage(modem, recipient, port, replyPort, data) -- sends a message on the network
-    if not validate.tableHasKeys(modem, {"transmit"}) or not validate.areNumbers({port, replyPort}) then
+function sendMessage(modem, recipient, port, replyPort, data, timeoutPerTry, numberOfTries) -- sends a message on the network
+    local messageSent = false
+    if not validate.tableHasKeys(modem, {"transmit"}) or not validate.areNumbers({port, replyPort, timeoutPerTry, numberOfTries}) then
         logging.errorMsg("networking: sendMessage: incorrect parameters")
     end
     
-    modem.transmit(port, replyPort, {
-        recipient = recipient,
-        port = port,
-        replyPort = replyPort,
-        data = data
-    }
-    )
+    for i = 1, numberOfTries do
+        modem.transmit(port, replyPort, {
+            recipient = recipient,
+            port = port,
+            replyPort = replyPort,
+            data = data
+        }
+        )
+        if waitForAck(modem, port, timeoutPerTry) then -- ack received
+            logging.infoMsg("networking: sendMessage: ack received")
+            messageSent = true
+            break
+        else
+            logging.warningMsg("networking: sendMessage: ack not received, sending again")
+        end
+    end
+    if not messageSent then
+        logging.warningMsg("networking: sendMessage: unable to send message")
+    end
 end
 
 function receiveMessage(modem, port, timeout) -- takes care of receiving a message, returns false if no data received during timeout
@@ -62,5 +76,21 @@ function handleMessage(message) -- handles a message if you want to catch it you
         return message.data
     else
         return false
+    end
+end
+
+function waitForAck(modem, port, timeout) -- waits for acknowledgement on sent message being received, returns false if timeout exceeded
+    local timer = os.startTimer(timeout)
+    modem.open(port)
+    while true do
+        local event, _, _, _, message, _ = os.pullEvent()
+        if event == "timer" then
+            return false
+        elseif event == "modem_message" then
+            if validate.tableHasKey(message, "action") and message.action == "ack" then -- if it's an ack and not a simple data message
+                os.cancelTimer(timer)
+                return true
+            end
+        end
     end
 end
