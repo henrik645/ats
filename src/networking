@@ -40,7 +40,7 @@ function sendMessage(modem, recipient, port, replyPort, data, timeoutPerTry, num
 end
 
 function receiveMessage(modem, port, timeout) -- takes care of receiving a message, returns false if no data received during timeout
-    if not validate.tableHasKeys(modem, {"open", "close"}) or not validate.isNumber(port) then
+    if not validate.tableHasKeys(modem, {"open", "close"}) or not validate.isNumber(port) or not validate.tableHasKey(settings, "nodeName") then
         logging.errorMsg("networking: receiveMessage: incorrect parameters")
     end
     
@@ -58,6 +58,14 @@ function receiveMessage(modem, port, timeout) -- takes care of receiving a messa
                 logging.infoMsg("networking: receiveMessage: data is " .. data, 0)
                 os.cancelTimer(timer) -- makes sure the timer isn't running in the background
                 logging.infoMsg("networking: receiveMessage: data is " .. data, 0)
+                modem.transmit(message.replyPort, port, {
+                    recipient = message.from,
+                    port = message.replyPort,
+                    replyPort = port,
+                    from = settings.nodeName,
+                    action = "ack"
+                }) -- sends an ack to confirm successful sending of message
+                logging.infoMsg("networking: receiveMessage: ack sent", 0)
                 return data
             end
         end
@@ -66,7 +74,7 @@ function receiveMessage(modem, port, timeout) -- takes care of receiving a messa
 end
 
 function handleMessage(message) -- handles a message if you want to catch it yourself
-    if not validate.tableHasKeys(message, {"recipient", "port", "replyPort", "data"}) or not validate.tableHasKey(settings, "nodeName") then -- tables don't contain the right things
+    if not validate.tableHasKeys(message, {"recipient", "port", "from", "replyPort", "data"}) or not validate.tableHasKey(settings, "nodeName") then -- tables don't contain the right things
         logging.errorMsg("networking: handleMessage: message or settings not formatted correctly")
     end
     
