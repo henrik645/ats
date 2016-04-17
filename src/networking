@@ -40,19 +40,23 @@ function receiveMessage(modem, port, timeout) -- takes care of receiving a messa
         logging.errorMsg("networking: receiveMessage: incorrect parameters")
     end
     
-    local timer = os.startTimer(timeout)
+    if not timeout == nil then -- if a timeout is actually supplied
+        local timer = os.startTimer(timeout)
+    end
     modem.open(port)
     while true do
         local event, _, _, _, message, _ = os.pullEvent()
         logging.infoMsg("networking: receiveMessage: event is " .. event, 0)
         
-        if event == "timer" then
+        if event == "timer" and not timeout == nil then
             return false
         elseif event == "modem_message" then
             data = handleMessage(message)
             if not data == false then
                 logging.infoMsg("networking: receiveMessage: data is " .. data, 0)
-                os.cancelTimer(timer) -- makes sure the timer isn't running in the background
+                if not timeout == nil then
+                    os.cancelTimer(timer) -- makes sure the timer isn't running in the background
+                end
                 logging.infoMsg("networking: receiveMessage: data is " .. data, 0)
                 modem.transmit(message.replyPort, port, {
                     recipient = message.from,
