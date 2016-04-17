@@ -54,8 +54,8 @@ function receiveMessage(modem, port, timeout) -- takes care of receiving a messa
             return false
         elseif event == "modem_message" then
             data = handleMessage(message)
-            logging.infoMsg("networking: receiveMessage: data is " .. data, 0)
             if not data == false then
+                logging.infoMsg("networking: receiveMessage: data is " .. data, 0)
                 os.cancelTimer(timer) -- makes sure the timer isn't running in the background
                 logging.infoMsg("networking: receiveMessage: data is " .. data, 0)
                 return data
