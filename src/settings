@@ -5,7 +5,7 @@ os.loadAPI("apis/logging")
 
 logging.initialise()
 
-local function getSettings(settingsFilePath)
+function getSettings(settingsFilePath)
     local settingsFile
     local settings
     
