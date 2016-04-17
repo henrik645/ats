@@ -14,13 +14,14 @@ end
 
 function sendMessage(modem, recipient, port, replyPort, data, timeoutPerTry, numberOfTries) -- sends a message on the network
     local messageSent = false
-    if not validate.tableHasKeys(modem, {"transmit"}) or not validate.areNumbers({port, replyPort, timeoutPerTry, numberOfTries}) then
+    if not validate.tableHasKeys(modem, {"transmit"}) or not validate.areNumbers({port, replyPort, timeoutPerTry, numberOfTries}) or not validate.tableHasKey(settings, "nodeName") then
         logging.errorMsg("networking: sendMessage: incorrect parameters")
     end
     
     for i = 1, numberOfTries do
         modem.transmit(port, replyPort, {
             recipient = recipient,
+            from = settings.nodeName,
             port = port,
             replyPort = replyPort,
             data = data
