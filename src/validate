@@ -58,6 +58,10 @@ function isNumber(x)
     return type(x) == "number"
 end
 
+function isString(str)
+    return type(str) == "string"
+end
+
 function areNumbers(list)
     local result = true -- if any item can't be found, this is false
     for i, num in pairs(list) do
