@@ -1,0 +1,55 @@
+ -- an API for loading, using, and writing settings files
+ 
+os.loadAPI("apis/validate")
+os.loadAPI("apis/logging")
+
+logging.initialise()
+
+local function getSettings(settingsFilePath)
+    local settingsFile
+    local settings
+    
+    if not validate.isString(settingsFilePath) then
+        logging.errorMsg("settings: getSettings: file path provided not a string")
+    end
+    if not fs.exists(settingsFilePath) then
+        logging.errorMsg("settings: getSettings: settings file does not exist")
+    end
+    
+    settingsFile = fs.open(settingsFilePath, "r")
+    settings = textutils.unserialize(settingsFile.readAll())
+    settingsFile.close()
+    
+    logging.infoMsg("settings: getSettings: read settings file '" .. settingsFilePath .. "'", 0)
+    return settings
+end
+
+local function saveSettings(settingsFilePath, settings)
+    local settingsFile
+    
+    if not validate.isString(settingsFilePath) then
+        logging.errorMsg("settings: getSettings: file path provided not a string")
+    end
+    
+    settingsFile = fs.open(settingsFilePath, "w")
+    settingsFile.write(textutils.serialize(settings))
+    settingsFile.close()
+    
+    logging.infoMsg("settings: getSettings: saved settings file '" .. settingsFilePath .. "'", 0)
+end
+
+function accessSetting(settingsFilePath, desiredSetting)
+    settings = getSettings(settingsFilePath)
+    if not validate.tableHasKey(settings, desiredSetting) then
+        logging.errorMsg("settings: accessSetting: no such setting in '" .. settingsFilePath .. "': '" .. desiredSetting .. "'")
+    else
+        return settings[desiredSetting]
+    end
+end
+
+function setSetting(settingsFilePath, desiredSetting, value)
+    settings = getSettings(settingsFilePath)
+    settings[desiredSetting] = value
+    saveSettings(settingsFilePath, settings)
+    logging.infoMsg("settings: setSetting: set setting '" .. desiredSetting .. " = " .. value .. "' in file '" .. settingsFilePath .. "' successfully", 0)
+end
