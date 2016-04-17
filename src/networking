@@ -35,7 +35,14 @@ function sendMessage(modem, recipient, port, replyPort, data, timeoutPerTry, num
     end
 end
 
-function receiveMessage(modem, port, timeout) -- takes care of receiving a message, returns false if no data received during timeout
+function receiveMessageAsync(modem, port, callbackFunction) -- calls callbackFunction back with message as parameters, must be run in parallel from calling program
+    while true do
+        message = receiveMessage(modem, port)
+        callbackFunction(message)
+    end
+end
+
+function receiveMessage(modem, port, timeout) -- takes care of receiving a message, returns false if no data received during timeout (timeout = nil means no timeout)
     if not validate.tableHasKeys(modem, {"open", "close"}) or not validate.isNumber(port) then
         logging.errorMsg("networking: receiveMessage: incorrect parameters")
     end
