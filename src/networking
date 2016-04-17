@@ -7,7 +7,7 @@ function initialise()
    -- place things here needing to be run before using this API
 end
 
-function sendMessage(modem, recipient, port, replyPort, data, timeoutPerTry, numberOfTries) -- sends a message on the network
+function sendMessage(modem, recipient, port, replyPort, data, timeoutPerTry, numberOfTries) -- sends a message on the network, returns true/false by success
     local messageSent = false
     if not validate.tableHasKeys(modem, {"transmit"}) or not validate.areNumbers({port, replyPort, timeoutPerTry, numberOfTries}) then
         logging.errorMsg("networking: sendMessage: incorrect parameters")
@@ -25,14 +25,23 @@ function sendMessage(modem, recipient, port, replyPort, data, timeoutPerTry, num
         if waitForAck(modem, port, timeoutPerTry) then -- ack received
             logging.infoMsg("networking: sendMessage: ack received", 0)
             messageSent = true
-            break
+            return true
         else
             logging.warningMsg("networking: sendMessage: ack not received, sending again", 0)
         end
     end
     if not messageSent then
         logging.warningMsg("networking: sendMessage: unable to send message", 2)
+        return false
     end
+end
+
+ -- Async functions are not functions running asynchronously, but instead functions that call another function back with the result,
+ -- for use when running send/receiveMessage in parallel (return values can't be accessed when running parallel API)
+
+function sendMessageAsync(modem, recipient, port, replyPort, data, timeoutPerTry, numberOfTries, callbackFunction) -- calls callbackFunction back with result as parameters, must be run in parallel from calling program
+    result = sendMessage(modem, recipient, port, replyPort, data, timeoutPerTry, numberOfTries)
+    callbackFunction(result)
 end
 
 function receiveMessageAsync(modem, port, callbackFunction) -- calls callbackFunction back with message as parameters, must be run in parallel from calling program
