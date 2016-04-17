@@ -64,7 +64,6 @@ function receiveMessage(modem, port, timeout) -- takes care of receiving a messa
                 if not timeout == nil then
                     os.cancelTimer(timer) -- makes sure the timer isn't running in the background
                 end
-                logging.infoMsg("networking: receiveMessage: message data is " .. message.data, 0)
                 modem.transmit(message.replyPort, port, {
                     recipient = message.from,
                     port = message.replyPort,
